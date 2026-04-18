@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<meta charset="UTF-8">
+<title>Resume Analyzer</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.header {
+    padding: 15px;
+    background: #020617;
+    text-align: center;
+}
+
+.chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.message {
+    max-width: 70%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    line-height: 1.5;
+}
+
+.user {
+    background: #2563eb;
+    margin-left: auto;
+}
+
+.bot {
+    background: #1e293b;
+}
+
+/* formatting */
+.message b { color: #38bdf8; }
+.message h3 { color: #60a5fa; margin-top: 10px; }
+.message ul { margin-left: 20px; }
+
+.input-area {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: #020617;
+}
+
+input, button {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+}
+
+input[type="text"] {
+    flex: 1;
+}
+
+button {
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>Resume Analyzer</h2>
+    <button onclick="goHome()">🏡 Home</button>
+    <button onclick="downloadReport()">📄 Download Report</button>
+</div>
+
+<div class="chat" id="chat"></div>
+
+<div class="input-area">
+    <input type="file" id="file">
+    <input type="text" id="msg" placeholder="Ask about your resume...">
+    <button onclick="send()">Send</button>
+</div>
+
+<script>
+
+function goHome() {
+    window.location.href = "index.html";
+}
+
+let fullReport = "";
+
+// FORMAT TEXT
+function formatText(text) {
+    text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+    text = text.replace(/### (.*?)(\n|$)/g, "<h3>$1</h3>");
+    text = text.replace(/\d+\.\s(.*?)(\n|$)/g, "<h3>$1</h3>");
+    text = text.replace(/[-•]\s(.*?)(\n|$)/g, "<li>$1</li>");
+    text = text.replace(/(<li>.*<\/li>)/g, "<ul>$1</ul>");
+    text = text.replace(/\n/g, "<br>");
+    return text;
+}
+
+// ADD MESSAGE
+function addMessage(text, type) {
+    const div = document.createElement("div");
+    div.className = "message " + type;
+
+    if (type === "bot") {
+        div.innerHTML = formatText(text);
+        fullReport += "\n\nAI:\n" + text;
+    } else {
+        div.innerText = text;
+        fullReport += "\n\nUSER:\n" + text;
+    }
+
+    const chat = document.getElementById("chat");
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+// SEND
+function send() {
+    const fileInput = document.getElementById("file");
+    const file = fileInput.files[0];
+    const msgInput = document.getElementById("msg");
+    const msg = msgInput.value;
+
+    if (file) {
+        addMessage("Uploaded: " + file.name, "user");
+
+        const fd = new FormData();
+        fd.append("file", file);
+
+        addMessage("Analyzing resume...⏳", "bot");
+
+        fetch("http://localhost:8080/analyze", {
+            method: "POST",
+            body: fd
+        })
+        .then(res => res.text())
+        .then(data => {
+            addMessage(data, "bot");
+            fileInput.value = "";
+        })
+        .catch(() => addMessage("Server error ⚠️", "bot"));
+
+        return;
+    }
+
+    if (msg.trim() !== "") {
+
+        addMessage(msg, "user");
+        msgInput.value = "";
+
+        const loading = document.createElement("div");
+        loading.className = "message bot";
+        loading.innerText = "Thinking...";
+        document.getElementById("chat").appendChild(loading);
+
+        fetch("http://localhost:8080/chat", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({message: msg})
+        })
+        .then(res => res.text())
+        .then(data => {
+            loading.remove();
+            addMessage(data, "bot");
+        })
+        .catch(() => {
+            loading.remove();
+            addMessage("Server error", "bot");
+        });
+    }
+}
+
+// DOWNLOAD PDF
+function downloadReport() {
+
+    if (!fullReport.trim()) {
+        alert("No report to download!");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // REMOVE emojis (fix issue)
+    let text = fullReport.replace(/[\u{1F300}-\u{1FAFF}]/gu, "");
+
+    let y = 20;
+
+    // TITLE
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("Resume Suggestion Report", 10, y);
+
+    y += 10;
+
+    // TIMESTAMP
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    const now = new Date().toLocaleString();
+    doc.text("Generated on: " + now, 10, y);
+
+    y += 8;
+
+    // LINE
+    doc.line(10, y, 200, y);
+    y += 10;
+
+    const lines = doc.splitTextToSize(text, 180);
+
+    lines.forEach(line => {
+
+        const lower = line.toLowerCase();
+
+        // Bold section headings
+        if (
+            lower.includes("skills") ||
+            lower.includes("education") ||
+            lower.includes("projects") ||
+            lower.includes("suggestions") ||
+            lower.includes("job roles") ||
+            lower.includes("score")
+        ) {
+            doc.setFont("helvetica", "bold");
+        } else {
+            doc.setFont("helvetica", "normal");
+        }
+
+        if (y > 280) {
+            doc.addPage();
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Resume Analysis Report", 10, 15);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text("Generated on: " + now, 10, 25);
+
+            doc.line(10, 30, 200, 30);
+
+            y = 40;
+        }
+
+        doc.setFontSize(11);
+        doc.text(line, 10, y);
+        y += 7;
+    });
+
+    // FOOTER
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text("Generated by Resume AI Assistant", 10, 290);
+
+    doc.save("Resume_Analysis_Report.pdf");
+}
+
+</script>
+
+</body>
+</html>

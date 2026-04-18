@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Resume AI Platform</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    text-align: center;
+}
+
+h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+p {
+    color: #94a3b8;
+    margin-bottom: 40px;
+}
+
+.buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+button {
+    padding: 15px 25px;
+    border: none;
+    border-radius: 12px;
+    background: #2563eb;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Resume AI Assistant 🤖</h1>
+    <p>Analyze, Chat, Compare & Build Smart Resumes</p>
+
+    <div class="buttons">
+        <button onclick="goAnalyzer()">📄 Resume Analyzer</button>
+        <button onclick="goCompare()">⚖ Compare & Merge </button>
+    </div>
+</div>
+
+<script>
+function goAnalyzer() {
+    window.location.href = "analyzer.html";
+}
+
+function goCompare() {
+    window.location.href = "compare.html";
+}
+</script>
+
+</body>
+</html>
