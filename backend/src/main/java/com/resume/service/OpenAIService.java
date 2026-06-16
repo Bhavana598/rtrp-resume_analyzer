@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class OpenAIService {
 
-    // ✅ Hardcoded API Key
-    String apiKey = System.getenv("API_KEY");
+    
+    private static final String API_KEY = "MY_API_KEY_HERE";
 
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -28,14 +28,12 @@ public class OpenAIService {
             body.addProperty("model", "llama-3.3-70b-versatile");
             body.add("messages", messages);
 
-           String apiKey = System.getenv("API_KEY");
-
-Request request = new Request.Builder()
-        .url("https://api.groq.com/openai/v1/chat/completions")
-        .addHeader("Authorization", "Bearer " + apiKey)
-        .addHeader("Content-Type", "application/json")
-        .post(RequestBody.create(body.toString(), JSON))
-        .build();
+            Request request = new Request.Builder()
+                    .url("https://api.groq.com/openai/v1/chat/completions")
+                    .addHeader("Authorization", "Bearer " + API_KEY)
+                    .addHeader("Content-Type", "application/json")
+                    .post(RequestBody.create(body.toString(), JSON))
+                    .build();
 
             Response response = client.newCall(request).execute();
             String responseBody = response.body() != null ? response.body().string() : "";
