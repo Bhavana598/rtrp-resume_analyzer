@@ -1,11 +1,16 @@
-package com.resume;
+package com.resume.util;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.web.multipart.MultipartFile;
 
-@SpringBootApplication
-public class ResumeApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(ResumeApplication.class, args);
+public class ResumeParser {
+
+    public static String extractText(MultipartFile file) throws Exception {
+        PDDocument document = PDDocument.load(file.getInputStream());
+        PDFTextStripper stripper = new PDFTextStripper();
+        String text = stripper.getText(document);
+        document.close();
+        return text;
     }
 }
