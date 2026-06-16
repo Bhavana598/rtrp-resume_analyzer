@@ -106,7 +106,7 @@ function generate() {
 
     document.getElementById("result").innerHTML = "Generating final resume...";
 
-    // ✅ DIRECTLY CALL MERGE (IMPORTANT FIX)
+   
     fetch("http://localhost:8080/merge", {
         method: "POST",
         body: fd
