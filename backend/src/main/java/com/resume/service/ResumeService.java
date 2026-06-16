@@ -1,4 +1,4 @@
-package com.resume.service;
+package com.resume.service; 
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,7 @@ import com.resume.util.ResumeParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
+ 
 @Service
 public class ResumeService {
 
@@ -19,9 +19,7 @@ public class ResumeService {
     private List<String> chatHistory = new ArrayList<>();
 
 
-    // =========================
-    // 📄 RESUME ANALYSIS
-    // =========================
+   
     public String processResume(MultipartFile file) {
         try {
 
@@ -35,7 +33,7 @@ public class ResumeService {
                 return "Could not extract text from PDF.";
             }
 
-            // ✅ Save resume
+           
             lastResumeText = text;
             resumes.add(text);
 
@@ -43,7 +41,7 @@ public class ResumeService {
                 resumes.remove(0);
             }
 
-            // 🔥 Reset chat
+           
             chatHistory.clear();
 
             String prompt = "You are an HR expert.\n\n"
@@ -63,9 +61,6 @@ public class ResumeService {
     }
 
 
-    // =========================
-    // 💬 CHAT WITH AI
-    // =========================
     public String chatWithAI(String message) {
 
         try {
@@ -75,7 +70,7 @@ public class ResumeService {
 
             chatHistory.add("User: " + message);
 
-            // 🔥 Limit history (important)
+           
             if (chatHistory.size() > 6) {
                 chatHistory.remove(0);
             }
@@ -85,14 +80,14 @@ public class ResumeService {
             prompt.append("You are a career assistant.\n")
                   .append("Always answer using the resume provided.\n\n");
 
-            // ✅ Attach resume
+           
             if (lastResumeText != null && !lastResumeText.isEmpty()) {
                 prompt.append("RESUME:\n")
                       .append(lastResumeText)
                       .append("\n\n");
             }
 
-            // ✅ Attach chat history
+           
             prompt.append("CONVERSATION:\n");
 
             for (String msg : chatHistory) {
@@ -113,9 +108,7 @@ public class ResumeService {
     }
 
 
-    // =========================
-    // ⚖ COMPARE RESUMES
-    // =========================
+  
     public String compareResumes() {
 
         if (resumes.size() < 2) {
@@ -140,45 +133,42 @@ public class ResumeService {
     }
 
 
-    // =========================
-    // 🧠 MERGE RESUMES
-    // =========================
-    public String mergeResumes() {
+   
+    public String mergeResumes(MultipartFile file1, MultipartFile file2) {
 
-    if (resumes.size() < 2) {
-        return "Upload at least 2 resumes.";
+    try {
+        String text1 = ResumeParser.extractText(file1);
+        String text2 = ResumeParser.extractText(file2);
+
+        if (text1 == null || text2 == null ||
+            text1.isEmpty() || text2.isEmpty()) {
+            return "Error reading resumes.";
+        }
+
+        String prompt =
+            "You are an expert resume builder.\n\n" +
+
+            "I have TWO resumes of the SAME person:\n" +
+            "1. OLD RESUME\n" +
+            "2. UPDATED RESUME\n\n" +
+
+            "Your task:\n" +
+            "- Compare both resumes carefully\n" +
+            "- Combine them into ONE FINAL resume\n" +
+            "- Remove duplicates\n" +
+            "- Keep latest and best information\n" +
+            "- Improve wording professionally\n\n" +
+
+            "OLD RESUME:\n" + text1 + "\n\n" +
+            "UPDATED RESUME:\n" + text2 + "\n\n" +
+
+            "FINAL OUTPUT FORMAT:\n" +
+            "Name\nContact\nSummary\nEducation\nSkills\nProjects\nProfiles\nAchievements\nCertifications\n";
+  
+        return openAIService.analyzeResume(prompt);
+
+    } catch (Exception e) {
+        return "Error merging resumes: " + e.getMessage();
     }
-
-    String oldResume = resumes.get(0);
-    String newResume = resumes.get(1);
-
-    String prompt = 
-        "You are an expert resume builder.\n\n" +
-
-        "I have TWO resumes of the SAME person:\n" +
-        "1. OLD RESUME\n" +
-        "2. UPDATED RESUME\n\n" +
-
-        "Your task:\n" +
-        "1. Identify improvements in the new resume\n" +
-        "2. Combine BOTH resumes\n" +
-        "3. KEEP all useful details from both\n" +
-        "4. REMOVE duplicates\n" +
-        "5. Create ONE FINAL PROFESSIONAL RESUME\n" +
-        "6. Make it ATS-friendly, clean, and well structured\n\n" +
-
-        "OLD RESUME:\n" + oldResume + "\n\n" +
-        "UPDATED RESUME:\n" + newResume + "\n\n" +
-
-        "FINAL OUTPUT FORMAT:\n" +
-        "Name\nContact\nSummary\nEducation\nSkills\nProjects\nProfiles\nAchievements\nCertifications\n\n" +
-
-        "IMPORTANT:\n" +
-        "- Do NOT say resumes are identical\n" +
-        "- Actually compare content carefully\n" +
-        "- Include NEW skills, links, certifications\n" +
-        "- Improve wording professionally\n";
-
-    return openAIService.analyzeResume(prompt);
 }
 }
