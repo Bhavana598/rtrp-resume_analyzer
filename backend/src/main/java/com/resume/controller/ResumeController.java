@@ -8,18 +8,15 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 @RestController
-@CrossOrigin(origins = "*") // allow frontend requests
-public class ResumeController {  
+@CrossOrigin(origins = "*")
+public class ResumeController {
 
     @Autowired
     private ResumeService resumeService;
 
-    // =========================
-    // 📄 RESUME UPLOAD & ANALYSIS
-    // =========================
+    
     @PostMapping("/analyze")
     public String uploadResume(@RequestParam("file") MultipartFile file) {
-
         try {
             if (file == null || file.isEmpty()) {
                 return "Please upload a valid resume file.";
@@ -27,14 +24,7 @@ public class ResumeController {
 
             String fileName = file.getOriginalFilename();
 
-            if (fileName == null) {
-                return "Invalid file.";
-            }
-
-            fileName = fileName.toLowerCase();
-
-            // ✅ Accept only PDF (recommended)
-            if (!fileName.endsWith(".pdf")) {
+            if (fileName == null || !fileName.toLowerCase().endsWith(".pdf")) {
                 return "Only PDF resumes are supported.";
             }
 
@@ -45,25 +35,34 @@ public class ResumeController {
         }
     }
 
-    @GetMapping("/merge")
-     public String merge() {
-    return resumeService.mergeResumes();
+    
+   @PostMapping("/merge")
+public String mergeResumes(
+        @RequestParam("file1") MultipartFile file1,
+        @RequestParam("file2") MultipartFile file2) {
+
+    try {
+        if (file1 == null || file2 == null ||
+            file1.isEmpty() || file2.isEmpty()) {
+            return "Please upload both resumes.";
+        }
+
+        return resumeService.mergeResumes(file1, file2);
+
+    } catch (Exception e) {
+        return "Error merging resumes: " + e.getMessage();
+    }
 }
 
-    // =========================
-    // 💬 CHAT ENDPOINT
-    // =========================
+    
     @PostMapping("/chat")
     public String chat(@RequestBody Map<String, String> body) {
-
         try {
             if (body == null || !body.containsKey("message")) {
                 return "Message is required.";
             }
 
-            String message = body.get("message");
-
-            return resumeService.chatWithAI(message);
+            return resumeService.chatWithAI(body.get("message"));
 
         } catch (Exception e) {
             return "Error in chat: " + e.getMessage();
